@@ -1,0 +1,32 @@
+{
+  "name": "mango-esign",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Setu Aadhaar eSign integration — Turborepo monorepo (Next.js web + NestJS api + shared contract).",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "db:migrate": "turbo run db:migrate --filter=api",
+    "db:seed": "turbo run db:seed --filter=api",
+    "openapi": "turbo run openapi --filter=api",
+    "types:gen": "turbo run types:gen --filter=@mango/shared"
+  },
+  "devDependencies": {
+    "@mango/prettier-config": "workspace:*",
+    "prettier": "^3.4.2",
+    "turbo": "^2.5.8",
+    "typescript": "^5.7.3"
+  },
+  "prettier": "@mango/prettier-config"
+}

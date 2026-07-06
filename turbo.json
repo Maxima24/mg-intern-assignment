@@ -1,0 +1,58 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["**/.env.*local", "tsconfig.json"],
+  "globalEnv": [
+    "NODE_ENV",
+    "DATABASE_URL",
+    "PORT",
+    "CORS_ORIGINS",
+    "SETU_PROVIDER",
+    "SETU_BASE_URL",
+    "SETU_CLIENT_ID",
+    "SETU_CLIENT_SECRET",
+    "SETU_PRODUCT_INSTANCE_ID",
+    "SETU_WEBHOOK_SECRET",
+    "NEXT_PUBLIC_API_BASE_URL",
+    "NEXT_PUBLIC_SITE_URL"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env.*"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "openapi.json"]
+    },
+    "openapi": {
+      "dependsOn": ["^build"],
+      "outputs": ["openapi.json"]
+    },
+    "types:gen": {
+      "dependsOn": ["api#openapi"],
+      "outputs": ["src/api.gen.ts"],
+      "cache": false
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": ["*.tsbuildinfo"]
+    },
+    "lint": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
+    },
+    "db:migrate": {
+      "cache": false
+    },
+    "db:seed": {
+      "cache": false
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}

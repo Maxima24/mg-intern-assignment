@@ -1,0 +1,11 @@
+node_modules
+dist
+.next
+out
+coverage
+.turbo
+pnpm-lock.yaml
+*.tsbuildinfo
+apps/api/openapi.json
+packages/shared/src/api.gen.ts
+apps/api/src/generated

@@ -1,0 +1,37 @@
+{
+  "name": "@mango/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    },
+    "./api": {
+      "import": { "types": "./dist/api.d.ts", "default": "./dist/api.js" },
+      "require": { "types": "./dist/api.d.cts", "default": "./dist/api.cjs" }
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "types:gen": "openapi-typescript ../../apps/api/openapi.json -o src/api.gen.ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "zod": "^4.4.0"
+  },
+  "devDependencies": {
+    "@mango/tsconfig": "workspace:*",
+    "openapi-typescript": "^7.5.0",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3"
+  }
+}
