@@ -30,6 +30,11 @@ export class EsignService {
     dto: UploadContractDto,
     file: Express.Multer.File,
   ): Promise<SignatureRecordDto> {
+    // Content check (not just the declared mimetype): a real PDF starts with "%PDF-".
+    if (!file.buffer.subarray(0, 5).equals(Buffer.from('%PDF-'))) {
+      throw new AppError(400, 'INVALID_FILE', 'File is not a valid PDF');
+    }
+
     const documentName = dto.documentName?.trim() || file.originalname;
 
     const upload = await this.setu.uploadDocument({
