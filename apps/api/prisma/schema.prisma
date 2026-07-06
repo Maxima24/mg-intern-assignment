@@ -1,0 +1,49 @@
+// Prisma schema for the Mango eSign metadata store.
+//
+// One row per signature request. We store the raw Setu status STRING (not a DB
+// enum) and classify it via @mango/shared's classifier, so Setu adding a status
+// never forces a migration. `rawSetu` keeps the full last-seen Setu payload for
+// audit/debugging and covers multi-signer futures without a schema change.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SignatureRequest {
+  id String @id
+
+  // Setu identifiers.
+  documentId  String @map("document_id")
+  signatureId String @unique @map("signature_id") // lookup key for status + webhook
+
+  // Uploaded document.
+  fileName     String  @map("file_name")
+  documentName String? @map("document_name")
+
+  // Signer (single-signer scope; denormalized).
+  signerName       String  @map("signer_name")
+  signerIdentifier String  @map("signer_identifier")
+  birthYear        String? @map("birth_year")
+
+  // State (raw Setu values, classified in-app).
+  status       String @default("sign_initiated")
+  signerStatus String @default("pending") @map("signer_status")
+  signerUrl    String @map("signer_url") // hosted Setu signing link
+
+  // Populated on completion (aadhaarName, aadhaarSuffix, birthYear, gender, postalCode).
+  signatureDetails Json? @map("signature_details")
+  // Full last-seen Setu signature object — audit + debugging.
+  rawSetu Json? @map("raw_setu")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([documentId])
+  @@index([status])
+  @@map("signature_requests")
+}

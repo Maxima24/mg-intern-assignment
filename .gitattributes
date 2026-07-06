@@ -1,0 +1,14 @@
+# Normalize line endings to LF across platforms.
+* text=auto eol=lf
+
+# Binary assets — never normalize.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+# Generated / lockfiles — keep out of diffs where noisy.
+pnpm-lock.yaml -diff
+packages/shared/src/api.gen.ts linguist-generated=true
