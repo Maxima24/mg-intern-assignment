@@ -20,6 +20,7 @@ export interface CreateSignatureRequestData {
   status: string;
   signerStatus: string;
   signerUrl: string;
+  originalStorageKey: string | null;
   signatureDetails: unknown;
   rawSetu: unknown;
 }
@@ -56,9 +57,17 @@ export class EsignRepository {
         status: data.status,
         signerStatus: data.signerStatus,
         signerUrl: data.signerUrl,
+        originalStorageKey: data.originalStorageKey,
         signatureDetails: toJson(data.signatureDetails),
         rawSetu: toJson(data.rawSetu),
       },
+    });
+  }
+
+  setSignedStorageKey(id: string, key: string): Promise<SignatureRequest> {
+    return this.prisma.signatureRequest.update({
+      where: { id },
+      data: { signedStorageKey: key },
     });
   }
 

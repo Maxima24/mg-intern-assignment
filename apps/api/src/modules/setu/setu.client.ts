@@ -1,4 +1,4 @@
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { SetuSignatureStatus, SignerStatus } from '@mango/shared';
@@ -51,7 +51,8 @@ export class SetuClient {
 
   async uploadDocument(input: SetuUploadInput): Promise<SetuUploadResult> {
     if (this.isStub()) {
-      const documentId = this.stubId('doc', `${input.name}:${input.filename}`);
+      // Unique per upload (like real Setu) so re-uploading the same file doesn't collide.
+      const documentId = this.randomId('doc');
       this.logger.log(`[stub] uploadDocument -> ${documentId}`);
       return { documentId, name: input.name };
     }
@@ -248,6 +249,10 @@ export class SetuClient {
 
   private stubId(prefix: string, seed: string): string {
     return `${prefix}_${createHash('sha1').update(seed).digest('hex').slice(0, 12)}`;
+  }
+
+  private randomId(prefix: string): string {
+    return `${prefix}_${randomBytes(6).toString('hex')}`;
   }
 
   // ---------------------------------------------------------------------------

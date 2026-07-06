@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  FileTypeValidator,
   Get,
   MaxFileSizeValidator,
   Param,
@@ -58,21 +59,25 @@ export class EsignController {
     },
   })
   @ApiCreatedResponse({ type: SignatureRecordDto })
+  // Note: we do NOT reject in multer's fileFilter — doing so aborts the request
+  // mid-stream and the client sees a reset instead of a clean 400. Instead multer
+  // buffers the file (size-capped) and ParseFilePipe validates type/size after the
+  // full body is read, so we always return a well-formed error response.
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
       limits: { fileSize: MAX_PDF_BYTES, files: 1 },
-      fileFilter: (_req, file, cb) => {
-        if (file.mimetype === 'application/pdf') cb(null, true);
-        else cb(new AppError(400, 'INVALID_FILE_TYPE', 'Only PDF files are allowed'), false);
-      },
     }),
   )
   uploadContract(
     @UploadedFile(
       new ParseFilePipe({
         fileIsRequired: true,
-        validators: [new MaxFileSizeValidator({ maxSize: MAX_PDF_BYTES })],
+        validators: [
+          new MaxFileSizeValidator({ maxSize: MAX_PDF_BYTES }),
+          new FileTypeValidator({ fileType: 'application/pdf' }),
+        ],
+        exceptionFactory: (message) => new AppError(400, 'INVALID_FILE', message),
       }),
     )
     file: Express.Multer.File,

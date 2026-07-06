@@ -5,6 +5,7 @@ import { ID_PREFIXES, newId } from '../../common/utils/ids';
 import { SetuClient } from '../setu/setu.client';
 import { deriveFromSetu } from '../setu/setu.mapper';
 import type { SetuSignature } from '../setu/setu.types';
+import { StorageService } from '../storage/storage.service';
 import { toSignatureRecordDto } from './esign.mapper';
 import { EsignRepository } from './esign.repository';
 import type { UploadContractDto } from './dto/upload-contract.dto';
@@ -22,6 +23,7 @@ export class EsignService {
   constructor(
     private readonly setu: SetuClient,
     private readonly repo: EsignRepository,
+    private readonly storage: StorageService,
   ) {}
 
   async uploadContract(
@@ -48,6 +50,14 @@ export class EsignService {
       ],
     });
 
+    // Keep our own copy of the original in R2 (best-effort — never block the flow).
+    const originalStorageKey = `contracts/${sig.id}/original.pdf`;
+    try {
+      await this.storage.put(originalStorageKey, file.buffer, 'application/pdf');
+    } catch (err) {
+      this.logger.warn(`Failed to store original for ${sig.id}: ${String(err)}`);
+    }
+
     const derived = deriveFromSetu(sig);
     const entity = await this.repo.create({
       id: newId(ID_PREFIXES.request),
@@ -61,6 +71,7 @@ export class EsignService {
       status: derived.status,
       signerStatus: derived.signerStatus,
       signerUrl: derived.signerUrl,
+      originalStorageKey,
       signatureDetails: derived.signatureDetails,
       rawSetu: derived.rawSetu,
     });
@@ -97,11 +108,29 @@ export class EsignService {
       throw new AppError(409, 'NOT_SIGNED', 'Document has not been signed yet');
     }
 
+    const base = (record.documentName || record.fileName).replace(/\.pdf$/i, '');
+    const filename = `${base.replace(/[^a-z0-9-_ ]/gi, '_').trim() || 'document'}-signed.pdf`;
+
+    // Serve from our R2 cache if we already stored the signed PDF.
+    if (record.signedStorageKey) {
+      const cached = await this.storage.get(record.signedStorageKey);
+      if (cached) {
+        return { buffer: cached.buffer, filename, contentType: cached.contentType };
+      }
+    }
+
+    // Otherwise pull it from Setu (pre-signed URL -> bytes), then cache it in R2.
     const info = await this.setu.getDownloadInfo(record.signatureId);
     const bytes = await this.setu.fetchDocumentBytes(info.downloadUrl);
 
-    const base = (record.documentName || record.fileName).replace(/\.pdf$/i, '');
-    const filename = `${base.replace(/[^a-z0-9-_ ]/gi, '_').trim() || 'document'}-signed.pdf`;
+    const signedKey = `contracts/${record.signatureId}/signed.pdf`;
+    try {
+      await this.storage.put(signedKey, bytes.buffer, bytes.contentType);
+      await this.repo.setSignedStorageKey(record.id, signedKey);
+    } catch (err) {
+      this.logger.warn(`Failed to cache signed PDF for ${record.signatureId}: ${String(err)}`);
+    }
+
     return { buffer: bytes.buffer, filename, contentType: bytes.contentType };
   }
 

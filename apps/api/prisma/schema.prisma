@@ -35,6 +35,10 @@ model SignatureRequest {
   signerStatus String @default("pending") @map("signer_status")
   signerUrl    String @map("signer_url") // hosted Setu signing link
 
+  // Cloudflare R2 object keys (our own copies; independent of Setu).
+  originalStorageKey String? @map("original_storage_key")
+  signedStorageKey   String? @map("signed_storage_key")
+
   // Populated on completion (aadhaarName, aadhaarSuffix, birthYear, gender, postalCode).
   signatureDetails Json? @map("signature_details")
   // Full last-seen Setu signature object — audit + debugging.

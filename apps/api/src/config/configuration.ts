@@ -11,6 +11,7 @@
  */
 
 export type SetuProviderMode = 'stub' | 'live';
+export type StorageProviderMode = 'stub' | 'r2';
 
 const parseOrigins = (csv: string | undefined): string[] =>
   (csv ?? '')
@@ -21,6 +22,9 @@ const parseOrigins = (csv: string | undefined): string[] =>
 export const appConfig = () => {
   const clientId = process.env.SETU_CLIENT_ID ?? null;
   const explicitMode = process.env.SETU_PROVIDER as SetuProviderMode | undefined;
+
+  const r2AccessKey = process.env.R2_ACCESS_KEY_ID ?? null;
+  const explicitStorage = process.env.STORAGE_PROVIDER as StorageProviderMode | undefined;
 
   return {
     app: {
@@ -39,8 +43,19 @@ export const appConfig = () => {
       // the mock signature reaches sign_complete.
       stubPollsToComplete: Number.parseInt(process.env.SETU_STUB_POLLS ?? '3', 10),
     },
+    storage: {
+      // 'stub' keeps objects in memory (no creds needed); 'r2' uses Cloudflare R2
+      // (S3-compatible). Auto-derives to 'r2' when an access key is present.
+      provider: explicitStorage ?? (r2AccessKey ? 'r2' : 'stub'),
+      bucket: process.env.R2_BUCKET ?? 'mango-esign',
+      endpoint: process.env.R2_ENDPOINT ?? null, // https://<accountId>.r2.cloudflarestorage.com
+      region: process.env.R2_REGION ?? 'auto',
+      accessKeyId: r2AccessKey,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? null,
+    },
   };
 };
 
 export type AppConfig = ReturnType<typeof appConfig>;
 export type SetuConfig = AppConfig['setu'];
+export type StorageConfig = AppConfig['storage'];
