@@ -37,7 +37,7 @@ export const appConfig = () => {
       webhookSecret: process.env.SETU_WEBHOOK_SECRET ?? null,
       // Signing-session realism knob for stub mode: how many status polls before
       // the mock signature reaches sign_complete.
-      stubPollsToComplete: Number.parseInt(process.env.SETU_STUB_POLLS ?? '2', 10),
+      stubPollsToComplete: Number.parseInt(process.env.SETU_STUB_POLLS ?? '3', 10),
     },
   };
 };

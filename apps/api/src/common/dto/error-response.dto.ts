@@ -2,10 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /** Swagger model for the standard error envelope emitted by AllExceptionsFilter. */
 export class ErrorBodyDto {
-  @ApiProperty({ example: 'NOT_FOUND', description: 'Stable SCREAMING_SNAKE error code' })
+  @ApiProperty({ type: String, example: 'NOT_FOUND', description: 'Stable SCREAMING_SNAKE error code' })
   code!: string;
 
-  @ApiProperty({ example: 'Signature request not found' })
+  @ApiProperty({ type: String, example: 'Signature request not found' })
   message!: string;
 
   @ApiPropertyOptional({
@@ -17,6 +17,6 @@ export class ErrorBodyDto {
 }
 
 export class ErrorResponseDto {
-  @ApiProperty({ type: ErrorBodyDto })
+  @ApiProperty({ type: () => ErrorBodyDto })
   error!: ErrorBodyDto;
 }
