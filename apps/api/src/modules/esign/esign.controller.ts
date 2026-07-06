@@ -7,6 +7,7 @@ import {
   Param,
   ParseFilePipe,
   Post,
+  Query,
   Res,
   StreamableFile,
   UploadedFile,
@@ -84,6 +85,14 @@ export class EsignController {
     @Body() dto: UploadContractDto,
   ): Promise<SignatureRecordDto> {
     return this.esign.uploadContract(dto, file);
+  }
+
+  @Get('signatures')
+  @ApiOperation({ summary: 'List recent signature requests (most recent first)' })
+  @ApiOkResponse({ type: SignatureRecordDto, isArray: true })
+  listRecent(@Query('limit') limit?: string): Promise<SignatureRecordDto[]> {
+    const parsed = limit ? Number.parseInt(limit, 10) : 20;
+    return this.esign.listRecent(Number.isFinite(parsed) ? parsed : 20);
   }
 
   @Get('signature-status/:id')

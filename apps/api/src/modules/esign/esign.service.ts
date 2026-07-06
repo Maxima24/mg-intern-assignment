@@ -80,6 +80,11 @@ export class EsignService {
     return toSignatureRecordDto(entity);
   }
 
+  async listRecent(limit = 20): Promise<SignatureRecordDto[]> {
+    const records = await this.repo.listRecent(Math.min(Math.max(limit, 1), 100));
+    return records.map(toSignatureRecordDto);
+  }
+
   async refreshStatus(id: string): Promise<SignatureRecordDto> {
     const record = await this.repo.findByAnyId(id);
     if (!record) throw new AppError(404, 'NOT_FOUND', 'Signature request not found');

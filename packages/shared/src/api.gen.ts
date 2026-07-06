@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/signatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List recent signature requests (most recent first) */
+        get: operations["EsignController_listRecent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/signature-status/{id}": {
         parameters: {
             query?: never;
@@ -234,6 +251,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SignatureRecordDto"];
+                };
+            };
+        };
+    };
+    EsignController_listRecent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureRecordDto"][];
                 };
             };
         };
