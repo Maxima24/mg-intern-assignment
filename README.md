@@ -1,5 +1,7 @@
 # Mango eSign
 
+[![CI](https://github.com/Maxima24/mg-intern-assignment/actions/workflows/ci.yml/badge.svg)](https://github.com/Maxima24/mg-intern-assignment/actions/workflows/ci.yml)
+
 A full-stack application for sending contracts out for **Aadhaar eSign** through
 [Setu](https://setu.co/data/esign/). Upload a PDF, generate a legally-backed Aadhaar
 signing link, track the signature status in real time, and download the signed
