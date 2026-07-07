@@ -17,10 +17,22 @@ export interface SetuUploadResult {
   name: string;
 }
 
+/**
+ * Where the signature is stamped on the document. Setu requires this per signer.
+ * `onPages` is 1-indexed page numbers as strings; `position` is a cardinal placement.
+ */
+export interface SetuSignaturePlacement {
+  onPages: string[];
+  position: string;
+  height?: number;
+  width?: number;
+}
+
 export interface SetuSignerInput {
   identifier: string;
   displayName: string;
   birthYear?: string | null;
+  signature?: SetuSignaturePlacement;
 }
 
 export interface SetuCreateSignatureInput {

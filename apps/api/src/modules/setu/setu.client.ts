@@ -92,16 +92,21 @@ export class SetuClient {
       return sig;
     }
 
+    // Setu requires a signature placement per signer. Default to a stamp on page 1;
+    // callers can override via signer.signature.
+    const defaultPlacement = { onPages: ['1'], position: 'bottom-left', height: 60, width: 180 };
     const res = await this.request('/api/signature', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         documentId: input.documentId,
         redirectUrl: input.redirectUrl,
-        signers: input.signers.map((s) => ({
+        signers: input.signers.map((s, i) => ({
           identifier: s.identifier,
           displayName: s.displayName,
+          signerNo: i + 1,
           ...(s.birthYear ? { birthYear: s.birthYear } : {}),
+          signature: s.signature ?? defaultPlacement,
         })),
       }),
     });
