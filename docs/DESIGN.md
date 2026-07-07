@@ -102,25 +102,25 @@ sequenceDiagram
   participant St as R2
 
   U->>Se: open signerUrl, Aadhaar OTP, eSign
-  Se-->>U: redirect to /signing-complete?id&success
+  Se-->>U: redirect to /signing-complete (id, success)
   loop every 4s until terminal
     W->>A: GET /api/signature-status/:id
     A->>Se: GET /api/signature/:id
-    Se-->>A: { status, signatureDetails }
-    A->>A: persist; classifySetuStatus stops polling on sign_complete
+    Se-->>A: status and signatureDetails
+    A->>A: persist and classify status (stops on sign_complete)
     A-->>W: SignatureRecord
   end
-  Se-->>A: POST /api/webhooks/setu (HMAC) — updates record early
+  Se-->>A: POST /api/webhooks/setu (HMAC) updates record early
   U->>W: click Download
   W->>A: GET /api/download/:id
   alt signed PDF cached in R2
     A->>St: get signed.pdf
   else first download
     A->>Se: GET /api/signature/:id/download (pre-signed URL)
-    A->>Se: GET pre-signed URL → bytes
+    A->>Se: GET pre-signed URL to fetch bytes
     A->>St: cache signed.pdf
   end
-  A-->>W: application/pdf (streamed, attachment)
+  A-->>W: application/pdf (streamed attachment)
 ```
 
 Polling and the webhook converge on the same record via the shared `classifySetuStatus`
