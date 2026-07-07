@@ -16,6 +16,7 @@ reach the browser.
 | API + Swagger (Railway) | _add after deploy_ · `/docs` |
 | Design doc | [docs/DESIGN.md](docs/DESIGN.md) |
 | Architecture decisions | [DECISIONS.md](DECISIONS.md) |
+| Postman collection (Stage 1) | [postman/](postman/) |
 
 ---
 
