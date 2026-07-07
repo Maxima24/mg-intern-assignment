@@ -1,0 +1,267 @@
+{
+  "info": {
+    "name": "Mango eSign — Setu Aadhaar eSign",
+    "_postman_id": "b7e2f0a1-9c3d-4e6f-8a12-mango-esign-0001",
+    "description": "Two folders:\n\n1. **Setu (direct sandbox)** — Stage 1: calls Setu's Aadhaar eSign API directly with the three credential headers. Requests chain automatically (upload -> documentId -> create signature -> signatureId -> status -> download).\n\n2. **Mango backend** — the same flow through OUR API, which is the only tier that talks to Setu.\n\nSet the environment variables `x-client-id`, `x-client-secret`, `x-product-instance-id` (Setu Sandbox environment), then Run. Setu's Data Gateway is India-restricted, so run these from an India IP.\n\nNote: the assignment lists the download as `GET /api/documents/:id/download`, but the real Setu endpoint is `GET /api/signature/:id/download` (keyed by the signature request id) and returns JSON `{ downloadUrl }`. This collection uses the correct path.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Setu (direct sandbox)",
+      "item": [
+        {
+          "name": "1. Upload document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.expect(pm.response.code).to.eql(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('returns document id', () => pm.expect(body.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('documentId', body.id);",
+                  "console.log('documentId =', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-client-id", "value": "{{x-client-id}}" },
+              { "key": "x-client-secret", "value": "{{x-client-secret}}" },
+              { "key": "x-product-instance-id", "value": "{{x-product-instance-id}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "document", "type": "file", "src": [], "description": "Select a PDF to upload" },
+                { "key": "name", "value": "Test contract", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{setuBaseUrl}}/api/documents",
+              "host": ["{{setuBaseUrl}}"],
+              "path": ["api", "documents"]
+            },
+            "description": "Multipart upload. Response: { id, name, documentType, validUpto }. The `id` is the documentId used below."
+          }
+        },
+        {
+          "name": "2. Create signature request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.expect(pm.response.code).to.eql(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('returns signature id', () => pm.expect(body.id).to.be.a('string'));",
+                  "pm.test('status is sign_initiated', () => pm.expect(body.status).to.eql('sign_initiated'));",
+                  "pm.test('signer has a hosted url', () => pm.expect(body.signers[0].url).to.be.a('string'));",
+                  "pm.collectionVariables.set('signatureId', body.id);",
+                  "console.log('signatureId =', body.id, '| open to sign:', body.signers[0].url);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-client-id", "value": "{{x-client-id}}" },
+              { "key": "x-client-secret", "value": "{{x-client-secret}}" },
+              { "key": "x-product-instance-id", "value": "{{x-product-instance-id}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentId\": \"{{documentId}}\",\n  \"redirectUrl\": \"https://example.com/signing-complete\",\n  \"signers\": [\n    {\n      \"identifier\": \"9876543210\",\n      \"displayName\": \"Test Signer\",\n      \"birthYear\": \"1990\",\n      \"signerNo\": 1,\n      \"signature\": { \"onPages\": [\"1\"], \"position\": \"bottom-left\", \"height\": 60, \"width\": 180 }\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{setuBaseUrl}}/api/signature",
+              "host": ["{{setuBaseUrl}}"],
+              "path": ["api", "signature"]
+            },
+            "description": "Body needs documentId, redirectUrl, and signers[] — each signer REQUIRES a `signature` placement block. Response: { id (signatureId), status, signers[].url (hosted signing link) }."
+          }
+        },
+        {
+          "name": "3. Signature status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.expect(pm.response.code).to.eql(200));",
+                  "const body = pm.response.json();",
+                  "console.log('status =', body.status, '| signer =', body.signers[0].status);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-client-id", "value": "{{x-client-id}}" },
+              { "key": "x-client-secret", "value": "{{x-client-secret}}" },
+              { "key": "x-product-instance-id", "value": "{{x-product-instance-id}}" }
+            ],
+            "url": {
+              "raw": "{{setuBaseUrl}}/api/signature/{{signatureId}}",
+              "host": ["{{setuBaseUrl}}"],
+              "path": ["api", "signature", "{{signatureId}}"]
+            },
+            "description": "Latest status. Poll until `status = sign_complete`. To complete the signature: open the signer url, enter Aadhaar 999999990019, OTP 123456."
+          }
+        },
+        {
+          "name": "4. Download signed document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK (only after sign_complete)', () => pm.expect(pm.response.code).to.eql(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('returns a downloadUrl', () => pm.expect(body.downloadUrl).to.be.a('string'));",
+                  "console.log('downloadUrl =', body.downloadUrl);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-client-id", "value": "{{x-client-id}}" },
+              { "key": "x-client-secret", "value": "{{x-client-secret}}" },
+              { "key": "x-product-instance-id", "value": "{{x-product-instance-id}}" }
+            ],
+            "url": {
+              "raw": "{{setuBaseUrl}}/api/signature/{{signatureId}}/download/",
+              "host": ["{{setuBaseUrl}}"],
+              "path": ["api", "signature", "{{signatureId}}", "download", ""]
+            },
+            "description": "Correct download endpoint (keyed by signature id, trailing slash). Only valid once status = sign_complete. Returns JSON { id, downloadUrl, validUpto } — a pre-signed S3 URL to the signed PDF."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mango backend (our API)",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{apiHost}}/health", "host": ["{{apiHost}}"], "path": ["health"] }
+          }
+        },
+        {
+          "name": "1. Upload contract",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.expect(pm.response.code).to.eql(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('mangoSignatureId', body.signatureId);",
+                  "console.log('signatureId =', body.signatureId, '| signerUrl =', body.signerUrl);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": [], "description": "Select a PDF" },
+                { "key": "signerName", "value": "Aarav Sharma", "type": "text" },
+                { "key": "signerIdentifier", "value": "aarav@example.com", "type": "text" },
+                { "key": "birthYear", "value": "1990", "type": "text" },
+                { "key": "redirectUrl", "value": "{{siteUrl}}/signing-complete", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{apiHost}}/api/upload-contract",
+              "host": ["{{apiHost}}"],
+              "path": ["api", "upload-contract"]
+            },
+            "description": "Our backend uploads to Setu, creates the signature, stores the file in R2, persists metadata, and returns the SignatureRecord."
+          }
+        },
+        {
+          "name": "2. List recent signatures",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiHost}}/api/signatures?limit=10",
+              "host": ["{{apiHost}}"],
+              "path": ["api", "signatures"],
+              "query": [{ "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "3. Signature status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiHost}}/api/signature-status/{{mangoSignatureId}}",
+              "host": ["{{apiHost}}"],
+              "path": ["api", "signature-status", "{{mangoSignatureId}}"]
+            }
+          }
+        },
+        {
+          "name": "4. Download signed PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiHost}}/api/download/{{mangoSignatureId}}",
+              "host": ["{{apiHost}}"],
+              "path": ["api", "download", "{{mangoSignatureId}}"]
+            },
+            "description": "Streams the signed PDF back through our backend (browser/Setu never talk directly)."
+          }
+        },
+        {
+          "name": "Webhook (simulate Setu notification)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"ESIGN_WEBHOOK_NOTIFICATION\",\n  \"timeStamp\": \"2026-07-07T12:00:00.000Z\",\n  \"data\": {\n    \"esign\": {\n      \"id\": \"{{mangoSignatureId}}\",\n      \"status\": \"sign_complete\",\n      \"signers\": [{ \"status\": \"signed\", \"signatureDetails\": { \"aadhaarName\": \"AARAV SHARMA\" } }]\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{apiHost}}/api/webhooks/setu",
+              "host": ["{{apiHost}}"],
+              "path": ["api", "webhooks", "setu"]
+            },
+            "description": "In stub/dev mode HMAC verification is bypassed. In live mode, Setu signs this and the backend verifies it against SETU_WEBHOOK_SECRET."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "setuBaseUrl", "value": "https://dg-sandbox.setu.co" },
+    { "key": "apiHost", "value": "http://localhost:4000" },
+    { "key": "siteUrl", "value": "http://localhost:3000" },
+    { "key": "documentId", "value": "" },
+    { "key": "signatureId", "value": "" },
+    { "key": "mangoSignatureId", "value": "" }
+  ]
+}
