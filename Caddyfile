@@ -1,0 +1,16 @@
+# Reverse proxy + automatic HTTPS (Let's Encrypt) for the whole stack on one domain.
+# APP_DOMAIN is injected from the environment (docker-compose passes it in).
+#   /api/*  -> NestJS api      (Setu, webhooks, downloads)
+#   /*      -> Next.js web
+
+{$APP_DOMAIN} {
+	encode gzip
+
+	handle /api/* {
+		reverse_proxy api:4000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

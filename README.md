@@ -220,15 +220,24 @@ fails `typecheck`. After changing a DTO: `pnpm --filter api openapi && pnpm --fi
 
 ## Deployment
 
-**Backend + Postgres → Railway.** Create a project, add a **Postgres** plugin (provides
-`DATABASE_URL`), and an api service pointing at `apps/api/Dockerfile` (build context = repo
-root; `railway.json` at the repo root wires this). The image runs `prisma migrate deploy`
-on start; health check is `/health`. Set `CORS_ORIGINS`, `SETU_*` and `R2_*` env vars.
+> **Important — Setu is geo/IP-restricted to India.** Its Data Gateway
+> (`dg-sandbox.setu.co` / `dg.setu.co`) returns a gateway-level `403` to non-India IPs,
+> before any auth. So for **live** Setu the backend must run from an India host with an
+> **allow-listed egress IP**. US/EU hosts (Vercel/Railway default regions) work only in
+> `stub` mode.
 
-**Frontend → Vercel.** Import the repo, set **Root Directory = `apps/web`**
-(`apps/web/vercel.json` sets the turbo-aware build command that also builds `@mango/shared`).
-Set `NEXT_PUBLIC_API_BASE_URL` to the Railway API URL + `/api`, and `NEXT_PUBLIC_SITE_URL`
-to the Vercel URL. Add the Vercel origin to the API's `CORS_ORIGINS`.
+**Primary: India VPS via Docker Compose (recommended for live).** A single
+`docker compose up -d --build` brings up Postgres + api + web + Caddy (automatic HTTPS)
+behind one domain. Full guide: **[docs/DEPLOY-VPS.md](docs/DEPLOY-VPS.md)**. Then send Setu
+the VPS egress IP (`curl -s ifconfig.co`) to allow-list, and set the webhook URL to
+`https://<domain>/api/webhooks/setu`.
+
+**Alternative: Vercel + Railway (stub mode / non-live demos).** Backend + Postgres on
+Railway (api service → `apps/api/Dockerfile`, `railway.json` wires it; runs
+`prisma migrate deploy` on start; `/health` check), frontend on Vercel (Root Directory
+`apps/web`, `apps/web/vercel.json` builds `@mango/shared` too). Set `NEXT_PUBLIC_API_BASE_URL`
+to the Railway API URL + `/api` and add the Vercel origin to `CORS_ORIGINS`. Live Setu calls
+will `403` from these regions — keep `SETU_PROVIDER=stub` there.
 
 ## Security
 
