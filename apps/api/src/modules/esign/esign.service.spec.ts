@@ -1,5 +1,4 @@
 import type { SignatureRequest } from '@prisma/client';
-import { AppError } from '../../common/utils/app-error';
 import { EsignService } from './esign.service';
 import type { EsignRepository } from './esign.repository';
 import type { SetuClient } from '../setu/setu.client';
