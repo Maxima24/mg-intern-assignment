@@ -10,6 +10,15 @@
 		reverse_proxy api:4000
 	}
 
+	# Health probe + Swagger UI live outside the /api prefix on the backend.
+	handle /health {
+		reverse_proxy api:4000
+	}
+
+	handle /docs* {
+		reverse_proxy api:4000
+	}
+
 	handle {
 		reverse_proxy web:3000
 	}
